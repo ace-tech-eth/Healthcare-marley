@@ -28,6 +28,12 @@
   "drug_prescription",
   "notes_section",
   "remarks",
+  "signature_section",
+  "signed",
+  "signed_by",
+  "signed_at",
+  "signature",
+  "signature_image",
   "amended_from"
  ],
  "fields": [
@@ -158,6 +164,46 @@
    "fieldtype": "Small Text",
    "ignore_xss_filter": 1,
    "label": "Remarks"
+  },
+  {
+   "fieldname": "signature_section",
+   "fieldtype": "Section Break",
+   "label": "Signature"
+  },
+  {
+   "default": "0",
+   "fieldname": "signed",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Signed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "signed_by",
+   "fieldtype": "Link",
+   "label": "Signed By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "signed_at",
+   "fieldtype": "Datetime",
+   "label": "Signed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "signature",
+   "fieldtype": "Link",
+   "label": "Signature Record",
+   "options": "Prescription Signature",
+   "read_only": 1
+  },
+  {
+   "fieldname": "signature_image",
+   "fieldtype": "Attach Image",
+   "label": "Signature Image",
+   "read_only": 1
   },
   {
    "fieldname": "amended_from",
