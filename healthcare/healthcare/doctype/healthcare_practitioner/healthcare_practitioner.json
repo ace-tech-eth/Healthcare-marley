@@ -16,6 +16,7 @@
   "practitioner_name",
   "gender",
   "image",
+  "signature_image",
   "column_break_7",
   "status",
   "mobile_phone",
@@ -84,6 +85,14 @@
    "fieldtype": "Attach Image",
    "hidden": 1,
    "label": "Image",
+   "no_copy": 1,
+   "print_hide": 1
+  },
+  {
+   "description": "Scanned signature used when this practitioner signs prescriptions.",
+   "fieldname": "signature_image",
+   "fieldtype": "Attach Image",
+   "label": "Prescription Signature Scan",
    "no_copy": 1,
    "print_hide": 1
   },

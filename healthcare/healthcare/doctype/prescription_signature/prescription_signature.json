@@ -16,7 +16,6 @@
   "practitioner",
   "practitioner_name",
   "signature_section",
-  "practitioner_signature",
   "user",
   "signed_by",
   "signed_at",
@@ -81,13 +80,6 @@
    "fieldname": "signature_section",
    "fieldtype": "Section Break",
    "label": "Signature"
-  },
-  {
-   "fieldname": "practitioner_signature",
-   "fieldtype": "Link",
-   "label": "Practitioner Signature",
-   "options": "Practitioner Signature",
-   "read_only": 1
   },
   {
    "fieldname": "user",
