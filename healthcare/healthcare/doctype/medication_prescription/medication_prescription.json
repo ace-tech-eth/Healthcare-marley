@@ -3,12 +3,13 @@
  "allow_copy": 1,
  "allow_import": 1,
  "allow_rename": 1,
- "autoname": "format:MED-RX-.YYYY.-.#####",
+ "autoname": "naming_series:",
  "creation": "2026-07-17 00:00:00.000000",
  "doctype": "DocType",
  "document_type": "Document",
  "engine": "InnoDB",
  "field_order": [
+  "naming_series",
   "patient_section",
   "patient",
   "patient_name",
@@ -37,6 +38,14 @@
   "amended_from"
  ],
  "fields": [
+  {
+   "default": "MED-RX-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "MED-RX-.YYYY.-.#####",
+   "reqd": 1
+  },
   {
    "fieldname": "patient_section",
    "fieldtype": "Section Break",
