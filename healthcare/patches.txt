@@ -34,3 +34,4 @@ healthcare.patches.v15_0.add_patient_tax_id
 healthcare.patches.v16_0.create_emergency_masters
 healthcare.patches.v16_0.setup_pharmacy_prescription_fields
 healthcare.patches.v16_0.setup_prescription_signature
+healthcare.patches.v16_0.setup_medication_prescription_naming_series
