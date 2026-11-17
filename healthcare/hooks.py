@@ -22,7 +22,7 @@ add_to_apps_screen = [
 # Includes in <head>
 # ------------------
 # include js, css files in header of desk.html
-# app_include_css = "/assets/healthcare/css/healthcare.css"
+app_include_css = "healthcare.bundle.css"
 app_include_js = "healthcare.bundle.js"
 
 # include js, css files in header of web template
@@ -44,6 +44,8 @@ doctype_js = {"Sales Invoice": "public/js/sales_invoice.js"}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
+
+extend_bootinfo = ["healthcare.boot.narrow_shared_module_sidebar_workspaces"]
 
 # Home Pages
 # ----------
@@ -142,6 +144,10 @@ doc_events = {
 scheduler_events = {
 	"all": [
 		"healthcare.healthcare.doctype.patient_appointment.patient_appointment.send_appointment_reminder",
+		"healthcare.healthcare.api.medication.schedule_due_medications",
+	],
+	"hourly": [
+		"healthcare.healthcare.api.nursing_tasks.lapse_missed_tasks",
 	],
 	"daily": [
 		"healthcare.healthcare.doctype.patient_appointment.patient_appointment.update_appointment_status",

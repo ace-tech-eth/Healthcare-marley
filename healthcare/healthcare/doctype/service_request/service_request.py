@@ -6,11 +6,12 @@ import json
 
 import frappe
 from frappe import _
+from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
 from frappe.utils import now_datetime
 
 from healthcare.controllers.service_request_controller import ServiceRequestController
-from healthcare.healthcare.doctype.observation.observation import add_observation
+from healthcare.healthcare.doctype.observation.observation import new_observation
 from healthcare.healthcare.doctype.observation_template.observation_template import (
 	get_observation_template_details,
 )
@@ -18,6 +19,7 @@ from healthcare.healthcare.doctype.patient_insurance_coverage.patient_insurance_
 	make_insurance_coverage,
 )
 from healthcare.healthcare.doctype.sample_collection.sample_collection import (
+	create_component_observations,
 	set_component_observation_data,
 )
 
@@ -129,12 +131,19 @@ class ServiceRequest(ServiceRequestController):
 
 
 @frappe.whitelist()
-def set_service_request_status(service_request, status):
+def set_service_request_status(service_request: str, status: str) -> None:
+	frappe.has_permission("Service Request", "write", service_request, throw=True)
+	update_service_request_status(service_request, status)
+
+
+def update_service_request_status(service_request: str, status: str) -> None:
+	"""For the submit and cancel hooks of the records that fulfil a request. The
+	user may submit a Lab Test without having write access to its request."""
 	frappe.db.set_value("Service Request", service_request, "status", status)
 
 
 @frappe.whitelist()
-def make_clinical_procedure(service_request, appointment=None):
+def make_clinical_procedure(service_request: str, appointment: str | None = None) -> "Document | None":
 	if not service_request:
 		return
 
@@ -171,7 +180,7 @@ def make_clinical_procedure(service_request, appointment=None):
 	doc.insurance_coverage = service_request.insurance_coverage
 	doc.coverage_status = service_request.coverage_status
 	doc.consume_stock = procedure_template.consume_stock
-	doc.warehouse = frappe.db.get_single_value("Stock Settings", "default_warehouse")
+	doc.warehouse = frappe.db.get_value("Company", service_request.company, "default_warehouse")
 
 	if not doc.codification_table and procedure_template.codification_table:
 		for code in procedure_template.codification_table:
@@ -191,7 +200,7 @@ def make_clinical_procedure(service_request, appointment=None):
 
 
 @frappe.whitelist()
-def make_lab_test(service_request):
+def make_lab_test(service_request: str) -> "Document | None":
 	if not service_request:
 		return
 
@@ -231,7 +240,7 @@ def make_lab_test(service_request):
 
 
 @frappe.whitelist()
-def make_observation(service_request, appointment=None):
+def make_observation(service_request: str, appointment: str | None = None) -> tuple | None:
 	if not service_request:
 		return
 
@@ -265,6 +274,13 @@ def make_observation(service_request, appointment=None):
 		)
 
 	if template.has_component:
+		# Imported locally - healthcare.utils imports back into this module
+		# elsewhere, so a top-level import here would be circular.
+		from healthcare.healthcare.utils import (
+			create_non_sample_observations,
+			has_sample_required_component,
+		)
+
 		if exist_sample_collection:
 			sample_collection = frappe.get_doc("Sample Collection", exist_sample_collection)
 		else:
@@ -280,18 +296,58 @@ def make_observation(service_request, appointment=None):
 		) = get_observation_template_details(service_request.template_dn)
 		if len(non_sample_reqd_component_obs) > 0:
 			for comp in non_sample_reqd_component_obs:
-				add_observation(
-					patient=service_request.patient,
-					template=comp,
-					doc="Patient Encounter",
-					docname=service_request.order_group,
-					parent=observation.name,
-				)
+				comp_has_component = frappe.db.get_value("Observation Template", comp, "has_component")
+				if comp_has_component and has_sample_required_component(comp):
+					# A mixed sub-panel is chained later, non-sample
+					# children included - an Observation here would duplicate it.
+					continue
+				if comp_has_component:
+					# Pure non-sample sub-panel - never chained elsewhere.
+					sub_observation = new_observation(
+						patient=service_request.patient,
+						template=comp,
+						company=service_request.company,
+						doc="Patient Encounter",
+						docname=service_request.order_group,
+						parent=observation.name,
+					)
+					create_non_sample_observations(
+						comp,
+						sub_observation,
+						{
+							"patient": service_request.patient,
+							"company": service_request.company,
+							"doc": "Patient Encounter",
+							"docname": service_request.order_group,
+						},
+					)
+				else:
+					new_observation(
+						patient=service_request.patient,
+						template=comp,
+						company=service_request.company,
+						doc="Patient Encounter",
+						docname=service_request.order_group,
+						parent=observation.name,
+					)
 
-		if len(sample_reqd_component_obs) > 0:
+		# A nested sub-panel with nothing sample-required directly on this
+		# level still needs a Sample Collection row for its own descendants.
+		if sample_reqd_component_obs or has_sample_required_component(service_request.template_dn):
 			save_sample_collection = True
 			obs_template = frappe.get_doc("Observation Template", service_request.template_dn)
 			data = set_component_observation_data(service_request.template_dn)
+			# Chain each sub-panel's own Observation, or its leaves would
+			# flatten onto this top-level `observation` instead
+			# of its real, more specific parent.
+			create_component_observations(
+				service_request.patient,
+				service_request.company,
+				service_request.practitioner,
+				data,
+				observation.name,
+				{"doc": "Patient Encounter", "docname": service_request.order_group},
+			)
 			# append parent template
 			sample_collection.append(
 				"observation_sample_collection",
@@ -392,6 +448,7 @@ def create_observation(service_request, appointment=None):
 	doc = frappe.new_doc("Observation")
 	doc.posting_datetime = now_datetime()
 	doc.patient = service_request.patient
+	doc.company = service_request.company
 	doc.appointment = appointment
 	doc.observation_template = service_request.template_dn
 	doc.reference_doctype = "Patient Encounter"
@@ -438,16 +495,23 @@ def check_observation_sample_exist(service_request):
 
 
 @frappe.whitelist()
-def make_appointment(source_name, target_doc=None, ignore_permissions=False):
+def make_appointment(
+	source_name: str, target_doc: "str | Document | None" = None, ignore_permissions: bool = False
+) -> "Document":
 	def postprocess(source, target):
 		set_missing_values(source, target)
 
 	def set_missing_values(source, target):
-		target.department = frappe.db.get_value(
-			"Healthcare Practitioner", source.referred_to_practitioner, "department"
+		if not source.referred_to_practitioner:
+			return
+
+		target.department, target.practitioner_name = frappe.db.get_value(
+			"Healthcare Practitioner",
+			source.referred_to_practitioner,
+			["department", "practitioner_name"],
 		)
 
-	doclist = get_mapped_doc(
+	doc = get_mapped_doc(
 		"Service Request",
 		source_name,
 		{
@@ -460,7 +524,7 @@ def make_appointment(source_name, target_doc=None, ignore_permissions=False):
 					"source_doc": "reference_doctype",
 					"order_group": "reference_docname",
 				},
-				"field_no_map": ["naming_series", "status"],
+				"field_no_map": ["naming_series", "status", "source"],
 			},
 		},
 		target_doc,
@@ -468,4 +532,4 @@ def make_appointment(source_name, target_doc=None, ignore_permissions=False):
 		ignore_permissions=ignore_permissions,
 	)
 
-	return doclist
+	return doc

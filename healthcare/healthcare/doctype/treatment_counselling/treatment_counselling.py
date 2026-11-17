@@ -86,7 +86,7 @@ def set_treatment_plan_template_items(doc):
 		medication_list = frappe.get_all("Drug Prescription", {"parent": doc.treatment_plan_template}, ["*"])
 		item_list.extend(medication_list)
 		for item in item_list:
-			args = {"price_list": doc.price_list}
+			args = frappe._dict({"price_list": doc.price_list})
 			if item.get("drug_code"):
 				item_details = get_item_price(args, item.get("drug_code"))
 			else:
@@ -158,7 +158,9 @@ def set_total_amount(doc):
 
 
 @frappe.whitelist()
-def create_ip_from_treatment_counselling(admission_order, treatment_counselling):
+def create_ip_from_treatment_counselling(admission_order: str | dict, treatment_counselling: str) -> None:
+	frappe.has_permission("Treatment Counselling", "write", treatment_counselling, throw=True)
+	frappe.has_permission("Inpatient Record", "create", throw=True)
 	ip_name = create_inpatient_record(admission_order)
 	frappe.db.set_value(
 		"Treatment Counselling",

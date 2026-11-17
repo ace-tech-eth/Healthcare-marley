@@ -14,6 +14,7 @@
   "patient_name",
   "patient_age",
   "patient_sex",
+  "emergency_record",
   "appointment",
   "referring_practitioner",
   "column_break_4",
@@ -35,6 +36,12 @@
   "sample_html",
   "section_break_15",
   "sample_details",
+  "consumables_section",
+  "consume_stock",
+  "warehouse",
+  "column_break_consumables",
+  "section_break_consumables",
+  "consumables",
   "section_break_put4",
   "service_request",
   "reference_doc",
@@ -50,6 +57,16 @@
    "hide_seconds": 1,
    "label": "Inpatient Record",
    "options": "Inpatient Record",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "patient.emergency_record",
+   "fieldname": "emergency_record",
+   "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Emergency Record",
+   "options": "Emergency Record",
    "read_only": 1
   },
   {
@@ -302,6 +319,43 @@
    "fieldtype": "Link",
    "label": "Appointment",
    "options": "Patient Appointment"
+  },
+  {
+   "fieldname": "consumables_section",
+   "fieldtype": "Section Break",
+   "label": "Consumables"
+  },
+  {
+   "default": "1",
+   "description": "Issue these items from the warehouse as samples are collected",
+   "fieldname": "consume_stock",
+   "fieldtype": "Check",
+   "label": "Consume Stock"
+  },
+  {
+   "depends_on": "consume_stock",
+   "fetch_from": "collection_point.warehouse",
+   "fetch_if_empty": 1,
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "label": "Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "column_break_consumables",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_consumables",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "consume_stock",
+   "fieldname": "consumables",
+   "fieldtype": "Table",
+   "label": "Consumables",
+   "no_copy": 1,
+   "options": "Observation Consumable"
   }
  ],
  "is_submittable": 1,
@@ -311,7 +365,7 @@
    "link_fieldname": "sample_collection"
   }
  ],
- "modified": "2025-12-25 09:36:29.541878",
+ "modified": "2026-10-15 20:45:21.929267",
  "modified_by": "Administrator",
  "module": "Healthcare",
  "name": "Sample Collection",

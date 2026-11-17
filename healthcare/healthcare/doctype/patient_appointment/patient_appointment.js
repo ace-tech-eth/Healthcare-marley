@@ -289,7 +289,7 @@ frappe.ui.form.on("Patient Appointment", {
 						await frappe.call(
 							"healthcare.healthcare.doctype.fee_validity.fee_validity.get_fee_validity",
 							{
-								appointment_name: frm.doc.name,
+								reference_dn: frm.doc.name,
 								date: frm.doc.appointment_date,
 								ignore_status: true,
 							},
@@ -350,7 +350,7 @@ frappe.ui.form.on("Patient Appointment", {
 					.then(val => {
 						frappe.call({
 							method: "healthcare.healthcare.doctype.fee_validity.fee_validity.check_fee_validity",
-							args: { appointment: frm.doc },
+							args: { visit: frm.doc },
 							callback: r => {
 								if (val && !r.message && !frm.doc.invoiced) {
 									make_payment(frm, val);
@@ -807,11 +807,11 @@ let check_and_set_availability = function (frm) {
 						.then(val => {
 							frappe.call({
 								method: "healthcare.healthcare.doctype.fee_validity.fee_validity.check_fee_validity",
-								args: { appointment: frm.doc },
+								args: { visit: frm.doc },
 								callback: r => {
 									if (val && !r.message && !frm.doc.invoiced) {
 										make_payment(frm, val);
-									} else {
+									} else if (val) {
 										frappe.call({
 											method: "healthcare.healthcare.doctype.patient_appointment.patient_appointment.update_fee_validity",
 											args: { appointment: frm.doc },
@@ -819,6 +819,9 @@ let check_and_set_availability = function (frm) {
 												frm.reload_doc();
 											},
 										});
+									} else {
+										// fee validity is already managed server side, in on_update
+										frm.reload_doc();
 									}
 								},
 							});
@@ -1428,6 +1431,7 @@ let make_payment = function (frm, automate_invoicing) {
 	}
 
 	function show_payment_dialog(frm, fields) {
+		const supports_icon_button = Boolean(frappe.ui?.button?.dress);
 		let d = new frappe.ui.Dialog({
 			title: "Enter Payment Details",
 			fields: fields,
@@ -1466,9 +1470,11 @@ let make_payment = function (frm, automate_invoicing) {
 					},
 				});
 			},
-			secondary_action_label: __(`<svg class="icon  icon-sm" style="">
-				<use class="" href="#icon-printer"></use>
-			</svg>`),
+			secondary_action_label: supports_icon_button
+				? __("Print")
+				: __(`<svg class="icon  icon-sm" style="">
+					<use class="" href="#icon-printer"></use>
+				</svg>`),
 			secondary_action() {
 				window.open(
 					"/app/print/Sales Invoice/" + frm.doc.ref_sales_invoice,
@@ -1477,6 +1483,14 @@ let make_payment = function (frm, automate_invoicing) {
 				d.hide();
 			},
 		});
+		if (supports_icon_button) {
+			const secondary_btn = d.get_secondary_btn();
+			frappe.ui.button.dress(secondary_btn, {
+				icon: "printer",
+				title: __("Print"),
+			});
+			secondary_btn.attr("title", __("Print"));
+		}
 		d.fields_dict["mode_of_payment"].df.onchange = () => {
 			if (d.get_value("mode_of_payment")) {
 				frm.set_value("mode_of_payment", d.get_value("mode_of_payment"));

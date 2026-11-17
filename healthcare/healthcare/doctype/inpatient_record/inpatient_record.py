@@ -333,7 +333,8 @@ class InpatientRecord(Document):
 
 
 @frappe.whitelist()
-def schedule_inpatient(admission_order):
+def schedule_inpatient(admission_order: str | dict) -> None:
+	frappe.has_permission("Inpatient Record", "create", throw=True)
 	if isinstance(admission_order, str):
 		admission_order = json.loads(admission_order)  # admission order via Encounter
 
@@ -399,13 +400,14 @@ def create_inpatient_record(admission_order):
 
 
 @frappe.whitelist()
-def schedule_discharge(discharge_order):
+def schedule_discharge(discharge_order: str) -> None:
 	discharge_order = json.loads(discharge_order)
 	inpatient_record_id = frappe.db.get_value("Patient", discharge_order["patient"], "inpatient_record")
 
 	if inpatient_record_id:
+		frappe.has_permission("Inpatient Record", "write", inpatient_record_id, throw=True)
 		inpatient_record = frappe.get_doc("Inpatient Record", inpatient_record_id)
-		check_out_inpatient(inpatient_record)
+
 		set_details_from_ip_order(inpatient_record, discharge_order)
 		inpatient_record.status = "Discharge Scheduled"
 		inpatient_record.save(ignore_permissions=True)
@@ -459,10 +461,28 @@ def discharge_patient(inpatient_record):
 
 	validate_incomplete_service_requests(inpatient_record)
 
+	check_out_inpatient(inpatient_record)
 	inpatient_record.discharge_datetime = now_datetime()
 	inpatient_record.status = "Discharged"
 
 	inpatient_record.save(ignore_permissions=True)
+	close_active_nursing_care_plans(inpatient_record)
+
+
+def close_active_nursing_care_plans(inpatient_record):
+	active_plans = frappe.get_all(
+		"Nursing Care Plan",
+		filters={
+			"inpatient_record": inpatient_record.name,
+			"status": "Active",
+		},
+		pluck="name",
+	)
+
+	for plan_name in active_plans:
+		plan = frappe.get_doc("Nursing Care Plan", plan_name)
+		plan.status = "Closed"
+		plan.save(ignore_permissions=True)
 
 
 def validate_inpatient_invoicing(inpatient_record):
@@ -578,6 +598,7 @@ def get_unbilled_inpatient_docs(doc, inpatient_record):
 	if doc in ["Lab Test", "Clinical Procedure"]:
 		filters.update(
 			{
+				"docstatus": ["<", 2],
 				"service_request": "",
 			}
 		)
@@ -687,7 +708,8 @@ def is_service_unit_billable(service_unit):
 
 
 @frappe.whitelist()
-def set_ip_order_cancelled(inpatient_record, reason, encounter=None):
+def set_ip_order_cancelled(inpatient_record: str, reason: str, encounter: str | None = None) -> None:
+	frappe.has_permission("Inpatient Record", "write", inpatient_record, throw=True)
 	inpatient_record = frappe.get_doc("Inpatient Record", inpatient_record)
 	if inpatient_record.status == "Admission Scheduled":
 		inpatient_record.status = "Cancelled"
@@ -712,7 +734,9 @@ def cancel_amend_treatment_counselling(args, treatment_counselling):
 
 
 @frappe.whitelist()
-def make_discharge_summary(source_name, target_doc=None, ignore_permissions=False):
+def make_discharge_summary(
+	source_name: str, target_doc: Document | None = None, ignore_permissions: bool = False
+) -> Document:
 	doclist = get_mapped_doc(
 		"Inpatient Record",
 		source_name,
@@ -722,7 +746,7 @@ def make_discharge_summary(source_name, target_doc=None, ignore_permissions=Fals
 				"field_map": {
 					"name": "inpatient_record",
 				},
-				"field_no_map": ["status", "chief_complaint", "diagnosis"],
+				"field_no_map": ["naming_series", "status", "chief_complaint", "diagnosis"],
 			},
 		},
 		target_doc,
@@ -815,7 +839,7 @@ def set_total(self):
 
 
 def validate_incomplete_service_requests(inpatient_record):
-	if not frappe.db.get_single_value(
+	if frappe.db.get_single_value(
 		"Healthcare Settings", "allow_discharge_despite_pending_healthcare_services"
 	):
 		return
