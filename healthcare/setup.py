@@ -37,6 +37,16 @@ data = {
 		"Patient",
 	],
 	"custom_fields": {
+		"Patient": [
+			{
+				"fieldname": "tax_id",
+				"label": "TIN Number",
+				"fieldtype": "Data",
+				"insert_after": "patient_name",
+				"unique": True,
+				"description": "Patient taxpayer identification number used on billing documents.",
+			},
+		],
 		"Sales Invoice": [
 			{
 				"fieldname": "patient",
@@ -52,6 +62,15 @@ data = {
 				"fetch_from": "patient.patient_name",
 				"insert_after": "patient",
 				"read_only": True,
+			},
+			{
+				"fieldname": "custom_fs_number",
+				"label": "FS Number",
+				"fieldtype": "Data",
+				"insert_after": "patient_name",
+				"allow_on_submit": True,
+				"print_hide": False,
+				"no_copy": True,
 			},
 			{
 				"fieldname": "ref_practitioner",
