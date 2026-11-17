@@ -20,6 +20,13 @@
   "stop_date",
   "order_status",
   "ordered_by",
+  "ordered_by_role",
+  "ordered_by_user",
+  "direct_order_from_nurse",
+  "administration_status",
+  "rejection_reason",
+  "given_by",
+  "given_at",
   "remark",
   "status",
   "stop_reason",
@@ -123,6 +130,55 @@
    "in_list_view": 1,
    "label": "Ordered By",
    "options": "Healthcare Practitioner"
+  },
+  {
+   "fieldname": "ordered_by_role",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Ordered By Role",
+   "options": "Doctor\nNurse"
+  },
+  {
+   "fieldname": "ordered_by_user",
+   "fieldtype": "Link",
+   "label": "Ordered By User",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "direct_order_from_nurse",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Direct Order From Nurse"
+  },
+  {
+   "fieldname": "administration_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Given / Rejected",
+   "options": "Given\nRejected",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.administration_status == 'Rejected'",
+   "fieldname": "rejection_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason (If Rejected)",
+   "mandatory_depends_on": "eval:doc.administration_status == 'Rejected'"
+  },
+  {
+   "fieldname": "given_by",
+   "fieldtype": "Link",
+   "label": "Given By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "given_at",
+   "fieldtype": "Datetime",
+   "label": "Given At",
+   "read_only": 1
   },
   {
    "fieldname": "remark",
