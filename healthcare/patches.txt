@@ -37,3 +37,4 @@ healthcare.patches.v16_0.setup_prescription_signature
 healthcare.patches.v16_0.setup_medication_prescription_naming_series
 healthcare.patches.v16_0.setup_prescription_signature_naming_series
 healthcare.patches.v16_0.setup_item_price_charge_fields
+healthcare.patches.v16_0.create_company_customer_group
