@@ -1,0 +1,42 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-11-23 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "service_name",
+  "item",
+  "billing_frequency",
+  "quantity",
+  "rate_override",
+  "auto_post",
+  "remarks"
+ ],
+ "fields": [
+  {"default": "1", "fieldname": "enabled", "fieldtype": "Check", "in_list_view": 1, "label": "Enabled"},
+  {"fieldname": "service_name", "fieldtype": "Data", "in_list_view": 1, "label": "Service Name", "reqd": 1},
+  {"fieldname": "item", "fieldtype": "Link", "in_list_view": 1, "label": "Item", "options": "Item", "reqd": 1},
+  {"default": "Daily", "fieldname": "billing_frequency", "fieldtype": "Select", "in_list_view": 1, "label": "Billing Frequency", "options": "Daily\nWeekly\nPer Visit\nPer Round\nPer Episode\nPer Session\nPer Cut"},
+  {"default": "1", "fieldname": "quantity", "fieldtype": "Float", "in_list_view": 1, "label": "Quantity"},
+  {"fieldname": "rate_override", "fieldtype": "Currency", "in_list_view": 1, "label": "Rate Override"},
+  {"default": "0", "fieldname": "auto_post", "fieldtype": "Check", "in_list_view": 1, "label": "Auto Post"},
+  {"fieldname": "remarks", "fieldtype": "Small Text", "label": "Remarks"}
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-11-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Healthcare",
+ "name": "Inpatient Service Configuration",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
