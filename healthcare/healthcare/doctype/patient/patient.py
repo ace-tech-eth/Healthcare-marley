@@ -32,6 +32,7 @@ class Patient(Document):
 
 	def validate(self):
 		self.set_full_name()
+		self.validate_dob()
 		self.flags.is_new_doc = self.is_new()
 		self.flags.existing_customer = self.is_new() and bool(self.customer)
 
@@ -70,6 +71,10 @@ class Patient(Document):
 		if self.customer:
 			info = get_dashboard_info("Customer", self.customer, None)
 			self.set_onload("dashboard_info", info)
+
+	def validate_dob(self):
+		if self.dob and getdate(self.dob) > getdate():
+			frappe.throw(_("Date of Birth cannot be greater than today"), title=_("Invalid Date of Birth"))
 
 	def set_full_name(self):
 		self.patient_name = " ".join(
@@ -344,11 +349,17 @@ def make_invoice(patient, company):
 	registration_item = frappe.db.get_single_value("Healthcare Settings", "registration_item") or None
 	sales_invoice = frappe.new_doc("Sales Invoice")
 	sales_invoice.customer = frappe.db.get_value("Patient", patient, "customer")
+	customer_doc = frappe.get_cached_doc("Customer", sales_invoice.customer)
 	sales_invoice.patient = patient
 	sales_invoice.due_date = getdate()
 	sales_invoice.company = company
 	sales_invoice.is_pos = 0
 	sales_invoice.debit_to = get_receivable_account(company)
+	sales_invoice.customer_name = customer_doc.customer_name
+	sales_invoice.customer_group = customer_doc.customer_group
+	sales_invoice.territory = customer_doc.territory
+	if customer_doc.default_price_list:
+		sales_invoice.selling_price_list = customer_doc.default_price_list
 
 	sales_invoice.append(
 		"items",
@@ -373,7 +384,8 @@ def make_invoice(patient, company):
 
 
 @frappe.whitelist()
-def get_patient_detail(patient):
+def get_patient_detail(patient: str) -> dict:
+	frappe.has_permission("Patient", "read", patient, throw=True)
 	patient_dict = frappe.db.sql("""select * from tabPatient where name=%s""", (patient), as_dict=1)
 	if not patient_dict:
 		frappe.throw(_("Patient not found"))

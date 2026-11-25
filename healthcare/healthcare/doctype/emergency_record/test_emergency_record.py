@@ -23,6 +23,11 @@ class TestEmergencyRecord(HealthcareTestSuite):
 		self.assertTrue(record.patient_age)
 		self.assertIn("Year", record.patient_age)
 
+	def test_manual_age_preserved_without_dob(self):
+		frappe.db.set_value("Patient", "_Test Patient", "dob", None)
+		record = create_emergency_record("_Test Patient", patient_age="40 Years")
+		self.assertEqual(record.patient_age, "40 Years")
+
 	def test_provisional_patient_created_when_unidentified(self):
 		record = create_unidentified_record("Unconscious male approx 40", gender="Male")
 		self.assertTrue(record.patient)
@@ -152,11 +157,11 @@ class TestEmergencyRecord(HealthcareTestSuite):
 				"reference_docname": record.name,
 				"observation_category": "Vital Signs",
 			},
-			fields=["observation_template", "result_data"],
+			fields=["observation_template", "result"],
 		)
 		self.assertEqual(len(observations), 1)
 		self.assertEqual(observations[0].observation_template, "Pulse")
-		self.assertEqual(observations[0].result_data, "82")
+		self.assertEqual(observations[0].result, "82")
 
 	def test_get_vital_signs_returns_recorded(self):
 		record = create_emergency_record("_Test Patient")

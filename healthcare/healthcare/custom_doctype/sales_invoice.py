@@ -2,7 +2,12 @@ import frappe
 from frappe.utils import flt
 
 from erpnext.accounts.doctype.sales_invoice.sales_invoice import SalesInvoice
-from erpnext.stock.get_item_details import ItemDetailsCtx, get_item_details
+from erpnext.stock.get_item_details import get_item_details
+
+try:
+	from erpnext.stock.get_item_details import ItemDetailsCtx
+except ImportError:
+	ItemDetailsCtx = dict
 
 
 class SalesInvoiceMixin:
@@ -17,6 +22,8 @@ class SalesInvoiceMixin:
 			price_list, price_list_currency = frappe.db.get_values(
 				"Price List", {"selling": 1}, ["name", "currency"]
 			)[0]
+			stock_uom = frappe.db.get_value("Item", checked_item.get("item"), "stock_uom")
+			requested_qty = flt(checked_item.get("qty")) or 1
 			ctx: ItemDetailsCtx = ItemDetailsCtx(
 				{
 					"doctype": "Sales Invoice",
@@ -28,6 +35,8 @@ class SalesInvoiceMixin:
 					"currency": self.currency or price_list_currency,
 					"plc_conversion_rate": 1.0,
 					"conversion_rate": 1.0,
+					"qty": requested_qty,
+					"uom": stock_uom,
 				}
 			)
 			item_details = get_item_details(ctx)
