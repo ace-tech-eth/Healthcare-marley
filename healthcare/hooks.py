@@ -1,7 +1,7 @@
 app_name = "healthcare"
 app_title = "Marley Health"
 app_publisher = "earthians Health Informatics Pvt. Ltd."
-app_description = "Modern, Open Source HIS built on Frappe and ERPNext"
+app_description = "Modern, Open Source HIS built for Gize EMR"
 app_icon = "octicon octicon-file-directory"
 app_color = "grey"
 app_email = "info@earthianslive.com"
